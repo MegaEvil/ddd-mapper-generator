@@ -15,5 +15,8 @@
     },
     "config": {
         "optimize-autoloader": true
-    }
+    },
+    "bin": [
+        "bin/ddd-mapper"
+    ]
 }
