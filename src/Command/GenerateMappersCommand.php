@@ -22,26 +22,13 @@ class GenerateMappersCommand extends Command
     private string $namespace;
     private ?MapperConfig $config = null;
 
-    public function __construct(
-        string $entityPath = __DIR__ . '/../../src/Entity',
-        string $dtoPath = __DIR__ . '/../../src/Dto',
-        string $outputPath = __DIR__ . '/../../generated/Mapper',
-        string $namespace = 'App\\Generated\\Mapper'
-    ) {
-        parent::__construct();
-        $this->entityPath = $entityPath;
-        $this->dtoPath = $dtoPath;
-        $this->outputPath = $outputPath;
-        $this->namespace = $namespace;
-    }
-
     protected function configure(): void
     {
         $this
-            ->addOption('entity-path', null, InputOption::VALUE_OPTIONAL, 'Путь к директории Entity', $this->entityPath)
-            ->addOption('dto-path', null, InputOption::VALUE_OPTIONAL, 'Путь к директории DTO', $this->dtoPath)
-            ->addOption('output-path', null, InputOption::VALUE_OPTIONAL, 'Путь для генерации мапперов', $this->outputPath)
-            ->addOption('namespace', null, InputOption::VALUE_OPTIONAL, 'Пространство имён для мапперов', $this->namespace)
+            ->addOption('entity-path', null, InputOption::VALUE_OPTIONAL, 'Путь к директории Entity', __DIR__ . '/../../src/Entity')
+            ->addOption('dto-path', null, InputOption::VALUE_OPTIONAL, 'Путь к директории DTO', __DIR__ . '/../../src/Dto')
+            ->addOption('output-path', null, InputOption::VALUE_OPTIONAL, 'Путь для генерации мапперов', __DIR__ . '/../../generated/Mapper')
+            ->addOption('namespace', null, InputOption::VALUE_OPTIONAL, 'Пространство имён для мапперов', 'App\\Generated\\Mapper')
             ->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Путь к конфигурации мапперов', 'config/mappers.yaml')
             ->addOption('clear', null, InputOption::VALUE_NONE, 'Очистить директорию перед генерацией');
     }

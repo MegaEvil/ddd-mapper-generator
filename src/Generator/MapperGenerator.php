@@ -11,6 +11,7 @@ use PhpParser\Node\Name;
 use PhpParser\Node\Stmt;
 use PhpParser\ParserFactory;
 use PhpParser\PrettyPrinter\Standard;
+use PhpParser\Node\Stmt\Namespace_;
 
 class MapperGenerator
 {
@@ -35,8 +36,7 @@ class MapperGenerator
         $this->dependencies = [];
         $this->collectDependencies($sourceClass, $targetClass);
 
-        $classBuilder = $this->factory->class($mapperClassName)
-            ->setNamespace($namespace);
+        $classBuilder = $this->factory->class($mapperClassName);
 
         $constructor = $this->generateConstructor();
         if ($constructor) {
@@ -47,8 +47,24 @@ class MapperGenerator
             ->addStmt($this->generateToDtoMethod($sourceClass, $targetClass))
             ->addStmt($this->generateToEntityMethod($targetClass, $sourceClass));
 
-        $stmts = [$classBuilder->getNode()];
-        return "<?php\n\n" . $this->printer->prettyPrintFile($stmts);
+        $classNode = $classBuilder->getNode();
+
+        // Оборачиваем класс в неймспейс
+        $namespaceNode = new Namespace_(
+            name: $this->parseNamespace($namespace), // разбиваем строку на части
+            stmts: [$classNode]
+        );
+
+        return "<?php\n\n" . $this->printer->prettyPrintFile([$namespaceNode]);
+    }
+
+    /**
+     * Преобразует строку неймспейса (например, "App\\Generated\\Mapper")
+     * в массив для PhpParser\Node\Name
+     */
+    private function parseNamespace(string $namespace): \PhpParser\Node\Name
+    {
+        return new \PhpParser\Node\Name($namespace);
     }
 
     private function collectDependencies(string $sourceClass, string $targetClass): void
@@ -107,7 +123,7 @@ class MapperGenerator
 
         foreach ($this->dependencies as $propertyName => $mapperClass) {
             $paramName = lcfirst(basename(str_replace('\\', '', $mapperClass)));
-            $params[] = new Param($paramName)->setType($mapperClass);
+            $params[] = (new Param($paramName))->setType($mapperClass)->getNode();
             $stmts[] = new Stmt\Expression(
                 new Expr\Assign(
                     new Expr\PropertyFetch(new Expr\Variable('this'), $paramName),
@@ -130,7 +146,7 @@ class MapperGenerator
     private function generateToDtoMethod(string $entityClass, string $dtoClass): Method
     {
         $method = $this->factory->method('toDto')
-            ->addParam(new Param('entity')->setType($entityClass))
+            ->addParam((new Param('entity'))->setType($entityClass)->getNode())
             ->setReturnType($dtoClass);
 
         $body = [];
@@ -233,7 +249,7 @@ class MapperGenerator
             new Name('array_map'),
             [
                 new Expr\Closure([
-                    'params' => [new Param('item')->setType($itemType)],
+                    'params' => [(new Param('item'))->setType($itemType)->getNode()],
                     'stmts' => [
                         new Stmt\Return_(
                             new Expr\MethodCall(
@@ -243,7 +259,7 @@ class MapperGenerator
                             )
                         )
                     ],
-                    'returnType' => $itemDtoClass,
+                    'returnType' => new Name($itemDtoClass),
                 ]),
                 $sourceExpr
             ]
@@ -253,7 +269,7 @@ class MapperGenerator
     private function generateToEntityMethod(string $dtoClass, string $entityClass): Method
     {
         $method = $this->factory->method('toEntity')
-            ->addParam(new Param('dto')->setType($dtoClass))
+            ->addParam((new Param('dto'))->setType($dtoClass)->getNode())
             ->setReturnType($entityClass);
 
         $body = [];
@@ -353,7 +369,7 @@ class MapperGenerator
             new Name('array_map'),
             [
                 new Expr\Closure([
-                    'params' => [new Param('item')->setType($itemType)],
+                    'params' => [(new Param('item'))->setType($itemType)->getNode()],
                     'stmts' => [
                         new Stmt\Return_(
                             new Expr\MethodCall(
