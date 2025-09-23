@@ -1,5 +1,5 @@
 {
-    "name": "app/ddd-mapper-generator",
+    "name": "ddd-mapper-generator/ddd-mapper-generator",
     "autoload": {
         "psr-4": {
             "App\\": "src/"
