@@ -1,0 +1,8 @@
+mappers:
+    - entity: App\Entity\User
+      dto: App\Dto\UserReadDto
+      mapper_name: UserReadMapper
+
+    - entity: App\Entity\Address
+      dto: App\Dto\AddressDto
+      mapper_name: AddressMapper

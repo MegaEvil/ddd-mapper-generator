@@ -1,0 +1,11 @@
+#!/usr/bin/env php
+<?php
+
+use App\Command\GenerateMappersCommand;
+use Symfony\Component\Console\Application;
+
+require __DIR__ . '/../vendor/autoload.php';
+
+$application = new Application('DDD Mapper Generator', '1.0');
+$application->add(new GenerateMappersCommand());
+$application->run();
