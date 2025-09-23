@@ -1,5 +1,6 @@
 {
     "name": "ddd-mapper-generator/ddd-mapper-generator",
+    "license": "MIT",
     "autoload": {
         "psr-4": {
             "App\\": "src/"
