@@ -4,7 +4,12 @@
 use App\Command\GenerateMappersCommand;
 use Symfony\Component\Console\Application;
 
-include __DIR__ . '/../vendor/autoload.php';
+if (file_exists(__DIR__ . '/../../../../autoload.php')) {
+    // ddd-mapper is part of a composer installation
+    require_once __DIR__ . '/../../../../autoload.php';
+} else {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
 
 $application = new Application('DDD Mapper Generator', '1.0');
 $application->add(new GenerateMappersCommand());
