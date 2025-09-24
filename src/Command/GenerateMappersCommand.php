@@ -18,24 +18,25 @@ use Symfony\Component\Console\Helper\ProgressBar;
 #[AsCommand(name: 'generate:mappers', description: 'Генерирует мапперы между Entity и DTO')]
 class GenerateMappersCommand extends Command
 {
-    private string $entityPath;
-    private string $entityNamespace;
-    private string $dtoNamespace;
-    private string $dtoPath;
-    private string $outputPath;
-    private string $namespace;
-    private ?MapperConfig $config = null;
+    protected string $entityPath = __DIR__ . '/../../src/Entity';
+    protected string $entityNamespace = 'App\\Entity';
+    protected string $dtoNamespace = 'App\\Dto';
+    protected string $dtoPath = __DIR__ . '/../../src/Dto';
+    protected string $outputPath = __DIR__ . '/../../generated/Mapper';
+    protected string $namespace = 'App\\Generated\\Mapper';
+    protected string $configPath = 'config/mappers.yaml';
+    protected ?MapperConfig $config = null;
 
     protected function configure(): void
     {
         $this
-            ->addOption('entity-path', null, InputOption::VALUE_OPTIONAL, 'Путь к директории Entity', __DIR__ . '/../../src/Entity')
-            ->addOption('dto-path', null, InputOption::VALUE_OPTIONAL, 'Путь к директории DTO', __DIR__ . '/../../src/Dto')
-            ->addOption('entity-namespace', null, InputOption::VALUE_OPTIONAL, 'Путь к директории DTO', 'App\\Entity')
-            ->addOption('dto-namespace', null, InputOption::VALUE_OPTIONAL, 'Путь к директории DTO', 'App\\Dto')
-            ->addOption('output-path', null, InputOption::VALUE_OPTIONAL, 'Путь для генерации мапперов', __DIR__ . '/../../generated/Mapper')
-            ->addOption('namespace', null, InputOption::VALUE_OPTIONAL, 'Пространство имён для мапперов', 'App\\Generated\\Mapper')
-            ->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Путь к конфигурации мапперов', 'config/mappers.yaml')
+            ->addOption('entity-path', null, InputOption::VALUE_OPTIONAL, 'Путь к директории Entity', $this->entityPath)
+            ->addOption('dto-path', null, InputOption::VALUE_OPTIONAL, 'Путь к директории DTO', $this->dtoPath)
+            ->addOption('entity-namespace', null, InputOption::VALUE_OPTIONAL, 'Путь к директории DTO', $this->entityNamespace)
+            ->addOption('dto-namespace', null, InputOption::VALUE_OPTIONAL, 'Путь к директории DTO', $this->dtoNamespace)
+            ->addOption('output-path', null, InputOption::VALUE_OPTIONAL, 'Путь для генерации мапперов', $this->outputPath)
+            ->addOption('namespace', null, InputOption::VALUE_OPTIONAL, 'Пространство имён для мапперов', $this->namespace)
+            ->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Путь к конфигурации мапперов', $this->configPath)
             ->addOption('clear', null, InputOption::VALUE_NONE, 'Очистить директорию перед генерацией');
     }
 
@@ -96,7 +97,8 @@ class GenerateMappersCommand extends Command
 
                 $mapperCode = $mapperGenerator->generateMapperClass($entityFqcn, $dtoFqcn, $mapperName, $this->namespace);
 
-                file_put_contents($outputFile, $mapperCode);
+                $res = file_put_contents($outputFile, $mapperCode);
+                $io->text($res);
                 $generatedCount++;
                 $io->text("✅ $mapperName");
             } catch (\Exception $e) {
@@ -157,7 +159,6 @@ class GenerateMappersCommand extends Command
     private function determineMapperName(string $entityFqcn, string $dtoFqcn): string
     {
         $nameFromConfig = $this->config->getMapperName($entityFqcn, $dtoFqcn);
-        var_dump($nameFromConfig);
         if ($nameFromConfig) {
             return $nameFromConfig;
         }
