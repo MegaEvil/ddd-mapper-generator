@@ -47,4 +47,20 @@ class MapperConfig
         }
         return null;
     }
+
+    public function addConfig(string $entityClass, string $dtoClass, ?string $mapper = null): void
+    {
+        if (!$this->isMapped($entityClass, $dtoClass)) {
+            $mapping = [
+                'entity' => $entityClass,
+                'dto' => $dtoClass,
+            ];
+
+            if (!is_null($mapper)) {
+                $mapping['mapper_name'] = $mapper;
+            }
+
+            $this->mappings[] = $mapping;
+        }
+    }
 }

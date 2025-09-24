@@ -6,6 +6,6 @@ namespace App\Attribute;
 class MapCollection
 {
     public function __construct(
-        public string $itemType
+        public string $itemType,
     ) {}
 }

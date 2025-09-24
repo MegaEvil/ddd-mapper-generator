@@ -1,3 +1,6 @@
+# Generated test mappers
+/generated/
+
 # Composer
 /vendor/
 

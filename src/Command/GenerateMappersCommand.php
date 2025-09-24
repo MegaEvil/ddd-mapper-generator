@@ -2,8 +2,10 @@
 
 namespace App\Command;
 
+use App\Attribute\MapsFromEntity;
 use App\Config\MapperConfig;
 use App\Generator\MapperGenerator;
+use ReflectionClass;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,6 +19,8 @@ use Symfony\Component\Console\Helper\ProgressBar;
 class GenerateMappersCommand extends Command
 {
     private string $entityPath;
+    private string $entityNamespace;
+    private string $dtoNamespace;
     private string $dtoPath;
     private string $outputPath;
     private string $namespace;
@@ -27,6 +31,8 @@ class GenerateMappersCommand extends Command
         $this
             ->addOption('entity-path', null, InputOption::VALUE_OPTIONAL, 'Путь к директории Entity', __DIR__ . '/../../src/Entity')
             ->addOption('dto-path', null, InputOption::VALUE_OPTIONAL, 'Путь к директории DTO', __DIR__ . '/../../src/Dto')
+            ->addOption('entity-namespace', null, InputOption::VALUE_OPTIONAL, 'Путь к директории DTO', 'App\\Entity')
+            ->addOption('dto-namespace', null, InputOption::VALUE_OPTIONAL, 'Путь к директории DTO', 'App\\Dto')
             ->addOption('output-path', null, InputOption::VALUE_OPTIONAL, 'Путь для генерации мапперов', __DIR__ . '/../../generated/Mapper')
             ->addOption('namespace', null, InputOption::VALUE_OPTIONAL, 'Пространство имён для мапперов', 'App\\Generated\\Mapper')
             ->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Путь к конфигурации мапперов', 'config/mappers.yaml')
@@ -45,6 +51,8 @@ class GenerateMappersCommand extends Command
         $this->dtoPath = $input->getOption('dto-path');
         $this->outputPath = $input->getOption('output-path');
         $this->namespace = $input->getOption('namespace');
+        $this->dtoNamespace = $input->getOption('dto-namespace');
+        $this->entityNamespace = $input->getOption('entity-namespace');
 
         if (!is_dir($this->entityPath)) {
             $io->error("Директория Entity не найдена: {$this->entityPath}");
@@ -77,13 +85,16 @@ class GenerateMappersCommand extends Command
         $progressBar->start();
 
         $generatedCount = 0;
-
         foreach ($pairs as [$entityFqcn, $dtoFqcn]) {
             $mapperName = $this->determineMapperName($entityFqcn, $dtoFqcn);
 
             try {
-                $mapperCode = $mapperGenerator->generateMapperClass($entityFqcn, $dtoFqcn, $mapperName, $this->namespace);
                 $outputFile = "{$this->outputPath}/{$mapperName}.php";
+                if (file_exists($outputFile)) {
+                    continue;
+                }
+
+                $mapperCode = $mapperGenerator->generateMapperClass($entityFqcn, $dtoFqcn, $mapperName, $this->namespace);
 
                 file_put_contents($outputFile, $mapperCode);
                 $generatedCount++;
@@ -115,17 +126,25 @@ class GenerateMappersCommand extends Command
 
         foreach ($finder as $file) {
             $entityName = $file->getBasename('.php');
-            $entityFqcn = "App\\Entity\\$entityName";
+            $entityFqcn = "{$this->entityNamespace}\\$entityName";
 
             $dtoFinder = new Finder();
             $dtoFinder->files()->in($this->dtoPath)->name("{$entityName}*Dto.php");
 
             foreach ($dtoFinder as $dtoFile) {
                 $dtoName = $dtoFile->getBasename('.php');
-                $dtoFqcn = "App\\Dto\\$dtoName";
+                $dtoFqcn = "{$this->dtoNamespace}\\$dtoName";
 
                 if ($this->config->isMapped($entityFqcn, $dtoFqcn)) {
                     continue;
+                }
+
+                $reflection = new ReflectionClass($dtoFqcn);
+                $attributes = $reflection->getAttributes(MapsFromEntity::class);
+                if (!empty($attributes)) {
+                    /** @var MapsFromEntity $mapsFromEntity */
+                    $mapsFromEntity = $attributes[0]->newInstance();
+                    $this->config->addConfig($mapsFromEntity->entityClass, $dtoFqcn, $mapsFromEntity->mapperName);
                 }
 
                 $pairs[] = [$entityFqcn, $dtoFqcn];
@@ -138,15 +157,20 @@ class GenerateMappersCommand extends Command
     private function determineMapperName(string $entityFqcn, string $dtoFqcn): string
     {
         $nameFromConfig = $this->config->getMapperName($entityFqcn, $dtoFqcn);
+        var_dump($nameFromConfig);
         if ($nameFromConfig) {
             return $nameFromConfig;
         }
 
-        $entityShort = basename(str_replace('\\', '', $entityFqcn));
-        $dtoShort = basename(str_replace('\\', '', $dtoFqcn));
+        $entityShort = basename(str_replace('\\', '/', $entityFqcn));
+        $dtoShort = basename(str_replace('\\', '/', $dtoFqcn));
 
         if (str_ends_with($dtoShort, 'Dto')) {
             $dtoShort = substr($dtoShort, 0, -3);
+        }
+
+        if ($entityShort == $dtoShort) {
+            return $entityShort . 'Mapper';
         }
 
         if (str_starts_with($dtoShort, $entityShort)) {
