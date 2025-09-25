@@ -131,7 +131,7 @@ class GenerateMappersCommand extends Command
             $entityFqcn = "{$this->entityNamespace}\\$entityName";
 
             $dtoFinder = new Finder();
-            $dtoFinder->files()->in($this->dtoPath)->name("{$entityName}*Dto.php");
+            $dtoFinder->files()->in($this->dtoPath)->name(["{$entityName}*Dto.php", "{$entityName}*DTO.php"]);
 
             foreach ($dtoFinder as $dtoFile) {
                 $dtoName = $dtoFile->getBasename('.php');
@@ -166,7 +166,10 @@ class GenerateMappersCommand extends Command
         $entityShort = basename(str_replace('\\', '/', $entityFqcn));
         $dtoShort = basename(str_replace('\\', '/', $dtoFqcn));
 
-        if (str_ends_with($dtoShort, 'Dto')) {
+        if (
+            str_ends_with($dtoShort, 'Dto')
+            || str_ends_with($dtoShort, 'DTO')
+        ) {
             $dtoShort = substr($dtoShort, 0, -3);
         }
 
