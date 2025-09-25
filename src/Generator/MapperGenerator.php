@@ -130,7 +130,7 @@ class MapperGenerator
     private function isComplexType(?string $type): bool
     {
         if (!$type) return false;
-        return !in_array($type, ['int', 'string', 'bool', 'float', 'array']);
+        return !in_array($type, ['int', 'string', 'bool', 'float', 'array', 'DateTimeImmutable', 'DateTime']);
     }
 
     private function guessDtoClass(string $entityClass): string
